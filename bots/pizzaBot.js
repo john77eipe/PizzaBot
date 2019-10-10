@@ -1,4 +1,4 @@
-
+const { ActivityHandler } = require('botbuilder');
 
 class PizzaBot extends ActivityHandler {
 

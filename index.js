@@ -4,9 +4,11 @@ const path = require('path');
 
 
 // Import required bot services. See https://aka.ms/bot-services to learn more about the different parts of a bot.
-const { BotFrameworkAdapter, UserState, MemoryStorage } = require('botbuilder');
+const { BotFrameworkAdapter, ConversationState, UserState, MemoryStorage } = require('botbuilder');
 
 const { PizzaBot } = require('./bots/pizzaBot');
+const { MainDialog } = require('./dialogs/mainDialog');
+const { PizzaOrderDialog } = require('./dialogs/pizzaOrderDialog');
 
 // Read botFilePath and botFileSecret from .env file
 const ENV_FILE = path.join(__dirname, '.env');
@@ -59,6 +61,6 @@ const pizzaBot = new PizzaBot(conversationState, userState, mainDialog);
 server.post('/api/messages', (req, res) => {
     adapter.processActivity(req, res, async (context) => {
         // route to main dialog.
-        await bot.run(context);
+        await pizzaBot.run(context);
     });
 });
