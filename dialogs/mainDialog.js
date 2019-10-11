@@ -17,7 +17,7 @@ const CHOICE_PROMPT = 'CHOICE_PROMPT';
 const CONFIRM_PROMPT = 'CONFIRM_PROMPT';
 const NAME_PROMPT = 'NAME_PROMPT';
 const USER_PROFILE = 'USER_PROFILE';
-const WATERFALL_DIALOG = 'WATERFALL_DIALOG';
+const MAIN_WATERFALL_DIALOG = 'MAIN_WATERFALL_DIALOG';
 
 class MainDialog extends ComponentDialog {
     constructor(userState) {
@@ -29,12 +29,12 @@ class MainDialog extends ComponentDialog {
         this.addDialog(new ChoicePrompt(CHOICE_PROMPT));
         this.addDialog(new ConfirmPrompt(CONFIRM_PROMPT));
 
-        this.addDialog(new WaterfallDialog(WATERFALL_DIALOG, [
+        this.addDialog(new WaterfallDialog(MAIN_WATERFALL_DIALOG, [
             this.nameStep.bind(this),
             this.shiftToOrderConfirmStep.bind(this)
         ]));
 
-        this.initialDialogId = WATERFALL_DIALOG;
+        this.initialDialogId = MAIN_WATERFALL_DIALOG;
     }
 
     /**

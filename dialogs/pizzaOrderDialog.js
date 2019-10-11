@@ -12,7 +12,7 @@ const { Pizza } = require('../pizza');
 
 const CHOICE_PROMPT = 'CHOICE_PROMPT';
 const CONFIRM_PROMPT = 'CONFIRM_PROMPT';
-const WATERFALL_DIALOG = 'WATERFALL_DIALOG';
+const PIZZA_ORDER_WATERFALL_DIALOG = 'PIZZA_ORDER_WATERFALL_DIALOG';
 const PIZZA_ORDER = 'PIZZA_ORDER';
 
 class PizzaOrderDialog extends ComponentDialog {
@@ -24,14 +24,14 @@ class PizzaOrderDialog extends ComponentDialog {
         this.addDialog(new ChoicePrompt(CHOICE_PROMPT));
         this.addDialog(new ConfirmPrompt(CONFIRM_PROMPT));
 
-        this.addDialog(new WaterfallDialog(WATERFALL_DIALOG, [
+        this.addDialog(new WaterfallDialog(PIZZA_ORDER_WATERFALL_DIALOG, [
 
             this.pizzaBaseStep.bind(this),
             this.pizzaToppingStep.bind(this),
             this.summaryStep.bind(this)
         ]));
 
-        this.initialDialogId = WATERFALL_DIALOG;
+        this.initialDialogId = PIZZA_ORDER_WATERFALL_DIALOG;
     }
 
     /**
