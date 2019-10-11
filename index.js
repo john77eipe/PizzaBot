@@ -53,8 +53,8 @@ const conversationState = new ConversationState(memoryStorage);
 const userState = new UserState(memoryStorage);
 
 // Create the main dialog.
-const orderingDialog = new PizzaOrderDialog(userState);
-const mainDialog = new MainDialog(orderingDialog);
+const orderingDialog = new PizzaOrderDialog(userState, conversationState);
+const mainDialog = new MainDialog(userState, conversationState, orderingDialog);
 const pizzaBot = new PizzaBot(conversationState, userState, mainDialog);
 
 // Listen for incoming activities and route them to your bot main dialog.

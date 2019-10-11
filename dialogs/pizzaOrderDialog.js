@@ -8,6 +8,7 @@ const {
     TextPrompt,
     WaterfallDialog
 } = require('botbuilder-dialogs');
+
 const { Pizza } = require('../pizza');
 
 const CHOICE_PROMPT = 'CHOICE_PROMPT';
@@ -16,10 +17,11 @@ const PIZZA_ORDER_WATERFALL_DIALOG = 'PIZZA_ORDER_WATERFALL_DIALOG';
 const PIZZA_ORDER = 'PIZZA_ORDER';
 
 class PizzaOrderDialog extends ComponentDialog {
-    constructor(userState) {
+
+    constructor(userState, conversationState) {
         super('pizzaOrderDialog');
 
-        this.pizzaOrder = userState.createProperty(PIZZA_ORDER);
+        this.pizzaOrder = conversationState.createProperty(PIZZA_ORDER);
 
         this.addDialog(new ChoicePrompt(CHOICE_PROMPT));
         this.addDialog(new ConfirmPrompt(CONFIRM_PROMPT));
