@@ -1,5 +1,3 @@
-// Copyright (c) Microsoft Corporation. All rights reserved.
-// Licensed under the MIT License.
 
 const {
     ChoiceFactory,
@@ -11,6 +9,7 @@ const {
     TextPrompt,
     WaterfallDialog
 } = require('botbuilder-dialogs');
+
 const { UserProfile } = require('../userProfile');
 
 const CHOICE_PROMPT = 'CHOICE_PROMPT';
@@ -21,11 +20,16 @@ const MAIN_WATERFALL_DIALOG = 'MAIN_WATERFALL_DIALOG';
 
 class MainDialog extends ComponentDialog {
 
-    constructor(userState, conversationState, orderingDialog) {
+    constructor(userState, conversationState, orderingDialog, luisRecognizer) {
 
         super('userProfileDialog');
 
-        this.userProfile = userState.createProperty(USER_PROFILE);
+        if (!luisRecognizer) throw new Error('[MainDialog]: Missing parameter \'luisRecognizer\' is required');
+        this.luisRecognizer = luisRecognizer;
+
+
+        this.userProfileAccessor = userState.createProperty(USER_PROFILE);
+        
 
         if (!orderingDialog) throw new Error('[MainDialog]: Missing parameter \'orderingDialog\' is required');
 
@@ -45,7 +49,6 @@ class MainDialog extends ComponentDialog {
         this.initialDialogId = MAIN_WATERFALL_DIALOG;
     }
 
-    
     /**
      * The run method handles the incoming activity (in the form of a TurnContext) and passes it through the dialog system.
      * If no dialog is active, it will start the default dialog.
@@ -64,36 +67,87 @@ class MainDialog extends ComponentDialog {
     }
 
     /**
-     * Second step in the waterfall.  This will use LUIS to attempt to extract the intent and order detils.
+     * Step (1)
+     * @param {stepContext} stepContext 
+     */
+    async nameStep(stepContext) {
+        stepContext.values.userInfo = new UserProfile();
+        return await stepContext.prompt(NAME_PROMPT, `May I know your name, please?`);
+    }
+
+    /**
+     * Step (2)
+     * Stores the name in userProfile
+     * @param {stepContext} stepContext 
+     */
+    async shiftToOrderConfirmStep(stepContext) {
+        
+        console.log("User name received:::" + stepContext.result)
+
+        stepContext.values.userInfo.name = stepContext.result;
+        
+        // Get the current profile object from user state.
+        this.userProfileAccessor = await this.userProfileAccessor.get(stepContext.context, new UserProfile());
+        this.userProfileAccessor.name = stepContext.result;
+        exports.userProfileAccessor = this.userProfileAccessor;
+
+        const bookingDetails = {};
+
+        if (this.luisRecognizer.isConfigured) {
+
+        
+
+            // Call LUIS and gather any potential booking details. (Note the TurnContext has the response to the prompt)
+            const luisResult = await this.luisRecognizer.executeLuisQuery(stepContext.context);
+            switch (LuisRecognizer.topIntent(luisResult)) {
+            case 'BuyPizza':
+                // Extract the values for the composite entities from the LUIS result.
+                const entities = this.luisRecognizer.getEntities(luisResult);
+                
+
+                // Show a warning for base and topping if we can't resolve them.
+                
+
+                // Initialize Pizza with any entities we may have found in the response.
+                bookingDetails = new Pizza();
+                // Run the BookingDialog passing in whatever details we have from the LUIS call, it will fill out the remainder.
+                return await stepContext.beginDialog('pizzaOrderDialog', bookingDetails);
+
+            default:
+                // Catch all for unhandled intents
+                const didntUnderstandMessageText = `Sorry, I didn't get that. Please try asking in a different way (intent was ${ LuisRecognizer.topIntent(luisResult) })`;
+                await stepContext.context.sendActivity(didntUnderstandMessageText, didntUnderstandMessageText, InputHints.IgnoringInput);
+            }
+        } else {
+            
+            // We can send messages to the user at any point in the WaterfallStep.
+            await stepContext.context.sendActivity(`Thanks ${ stepContext.result }.`);
+
+            // WaterfallStep always finishes with the end of the Waterfall or with another dialog; here it is a Prompt Dialog.
+            return await stepContext.prompt(CHOICE_PROMPT, {
+                prompt:'Do you want to order a pizza?', 
+                choices: ChoiceFactory.toChoices(['now', 'later'])
+            });  
+        }  
+    }
+
+    /**
+     * Step (3) in the waterfall.  This will use LUIS to attempt to extract the intent and order detils.
      * Then, it hands off to the orderingDialog child dialog to collect any remaining details.
      */
-    async actStep(step) {
-        if (step.result) {
-            console.log(step.values.name);
-            // Get the current profile object from user state.
-            const userProfile = await this.userProfile.get(step.context, new UserProfile());
-            userProfile.name = step.values.name;
-            return await step.beginDialog('pizzaOrderDialog');  
+    async actStep(stepContext) {
+        console.log("User choice received for order:::" + stepContext.result.value);
+        stepContext.values.userInfo.immediateOrder = stepContext.result.value;
+        this.userProfileAccessor.immediateOrder = stepContext.result.value;
+
+        if (stepContext.result.value === 'now') {
+            
+            return await stepContext.beginDialog('pizzaOrderDialog');  
         }
     }
 
-    async nameStep(step) {
-        return await step.prompt(NAME_PROMPT, `May I know your name, please?`);
-    }
 
-    async shiftToOrderConfirmStep(step) {
-        
-        step.values.name = step.result;
-
-        // We can send messages to the user at any point in the WaterfallStep.
-        await step.context.sendActivity(`Thanks ${ step.result }.`);
-
-        // WaterfallStep always finishes with the end of the Waterfall or with another dialog; here it is a Prompt Dialog.
-        return await step.prompt(CONFIRM_PROMPT, {
-            prompt:'Do you want to order a pizza?', 
-            choices: ChoiceFactory.toChoices(['now', 'later'])
-        });    
-    }
+    
 
     /**
      * This is the final step in the main waterfall dialog.
@@ -115,3 +169,4 @@ class MainDialog extends ComponentDialog {
 }
 
 module.exports.MainDialog = MainDialog;
+module.exports.userProfileAccessor = exports.userProfileAccessor;

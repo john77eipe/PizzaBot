@@ -9,6 +9,7 @@ const { BotFrameworkAdapter, ConversationState, UserState, MemoryStorage } = req
 const { PizzaBot } = require('./bots/pizzaBot');
 const { MainDialog } = require('./dialogs/mainDialog');
 const { PizzaOrderDialog } = require('./dialogs/pizzaOrderDialog');
+const { PizzaOrderLuisService } = require('./dialogs/pizzaOrderLuisService');
 
 // Read botFilePath and botFileSecret from .env file
 const ENV_FILE = path.join(__dirname, '.env');
@@ -52,9 +53,14 @@ const memoryStorage = new MemoryStorage();
 const conversationState = new ConversationState(memoryStorage);
 const userState = new UserState(memoryStorage);
 
+const { LuisAppId, LuisAPIKey, LuisAPIHostName } = process.env;
+const luisConfig = { applicationId: LuisAppId, endpointKey: LuisAPIKey, endpoint: `https://${ LuisAPIHostName }` };
+
+const luisRecognizer = new PizzaOrderLuisService(luisConfig);
+
 // Create the main dialog.
 const orderingDialog = new PizzaOrderDialog(userState, conversationState);
-const mainDialog = new MainDialog(userState, conversationState, orderingDialog);
+const mainDialog = new MainDialog(userState, conversationState, orderingDialog, luisRecognizer);
 const pizzaBot = new PizzaBot(conversationState, userState, mainDialog);
 
 // Listen for incoming activities and route them to your bot main dialog.

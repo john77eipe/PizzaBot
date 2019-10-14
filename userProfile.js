@@ -1,8 +1,8 @@
 
 class UserProfile {
-    constructor(name, age) {
+    constructor(name, immediateOrder) {
         this.name = name;
-        this.age = age;
+        this.immediateOrder = immediateOrder;
     }
 }
 

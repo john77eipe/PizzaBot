@@ -15,12 +15,14 @@ const CHOICE_PROMPT = 'CHOICE_PROMPT';
 const CONFIRM_PROMPT = 'CONFIRM_PROMPT';
 const PIZZA_ORDER_WATERFALL_DIALOG = 'PIZZA_ORDER_WATERFALL_DIALOG';
 const PIZZA_ORDER = 'PIZZA_ORDER';
+const USER_PROFILE = 'USER_PROFILE';
+const mainDialog = require('./mainDialog');
+
 
 class PizzaOrderDialog extends ComponentDialog {
 
     constructor(userState, conversationState) {
         super('pizzaOrderDialog');
-
         this.pizzaOrder = conversationState.createProperty(PIZZA_ORDER);
 
         this.addDialog(new ChoicePrompt(CHOICE_PROMPT));
@@ -53,43 +55,47 @@ class PizzaOrderDialog extends ComponentDialog {
         }
     }
 
-    async pizzaBaseStep(step) {
+    async pizzaBaseStep(stepContext) {
 
-        step.values.pizzaBase = step.result;
-
-        return await step.prompt(CHOICE_PROMPT, {
+        return await stepContext.prompt(CHOICE_PROMPT, {
             prompt:'Please select the type of pizza base?', 
             choices: ChoiceFactory.toChoices(['crust', 'thick'])
         });  
     }
 
-    async pizzaToppingStep(step) {
+    async pizzaToppingStep(stepContext) {
+        console.log("Pizza base selection received: ", stepContext.result.value);
+        stepContext.values.pizzaBase = stepContext.result.value;
 
-        step.values.pizzaTopping = step.result;
+        console.log("mainDialog.MainDialog.userProfileAccessor::: " + mainDialog.userProfileAccessor.name);
+
+        console.log("stepContext.values.userInfo::: " + stepContext.values.userInfo);
 
         // We can send messages to the user at any point in the WaterfallStep.
-        await step.context.sendActivity(`Thanks ${ step.result }.`);
+        await stepContext.context.sendActivity(`Thanks ${ mainDialog.userProfileAccessor.name }.`);
 
         // WaterfallStep always finishes with the end of the Waterfall or with another dialog; here it is a Prompt Dialog.
-        return await step.prompt(CHOICE_PROMPT, {
+        return await stepContext.prompt(CHOICE_PROMPT, {
             prompt:'Please select the toppings that you would like?', 
             choices: ChoiceFactory.toChoices(['tomato', 'onions', 'mushrooms'])
         });    
     }
 
-    async summaryStep(step) {
-        if (step.result) {
+    async summaryStep(stepContext) {
+        if (stepContext.result) {
             
-            const pizzaOrder = await this.pizzaOrder.get(step.context, new Pizza());
+            stepContext.values.pizzaTopping = stepContext.result.value;
 
-            pizzaOrder.pizzaBase = step.values.pizzaBase;
-            pizzaOrder.pizzaTopping = step.values.pizzaTopping;
+            const pizzaOrder = await this.pizzaOrder.get(stepContext.context, new Pizza());
+
+            pizzaOrder.pizzaBase = stepContext.values.pizzaBase;
+            pizzaOrder.pizzaTopping = stepContext.values.pizzaTopping;
 
             let msg = `I have your order of pizza with base ${ pizzaOrder.pizzaBase } and with toppings ${ pizzaOrder.pizzaTopping }.`;
             
-            await step.context.sendActivity(msg);
+            await stepContext.context.sendActivity(msg);
         } else {
-            await step.context.sendActivity('Thanks. Your order has not been placed.');
+            await stepContext.context.sendActivity('Thanks. Your order has not been placed.');
         }
 
         // WaterfallStep always finishes with the end of the Waterfall or with another dialog, here it is the end.
